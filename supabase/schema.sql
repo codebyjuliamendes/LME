@@ -3,6 +3,7 @@
 -- Depois, em Authentication → URL Configuration, adicione o endereço do app (ex.: https://SEU-USUARIO.github.io/LME/app/).
 -- Para criar a primeira pessoa da coordenação, depois que ela fizer o cadastro no app:
 --   update public.profiles set role = 'coordination' where email = 'email@exemplo.com';
+-- O banco começa vazio: a coordenação cadastra eventos, Círculos, desafios, especialistas, benefícios e oportunidades pelo painel.
 
 create extension if not exists pgcrypto;
 
@@ -14,7 +15,7 @@ create table if not exists public.profiles (
   perfis jsonb not null default '[]', interest text, skills jsonb not null default '[]',
   business text, innovation text, seeking text, offering text,
   onboarded boolean not null default false, role text not null default 'member' check (role in ('member', 'coordination')),
-  ambassador text default '', mentor boolean not null default false, demo_login boolean not null default false
+  ambassador text default '', mentor boolean not null default false
 );
 
 create table if not exists public.events (id text primary key default gen_random_uuid()::text, created_at timestamptz not null default now(),
@@ -93,8 +94,8 @@ $$;
 create or replace function public.protect_profile() returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if not public.is_coord() then
-    if tg_op = 'INSERT' then new.role := 'member'; new.ambassador := ''; new.mentor := false; new.demo_login := false;
-    else new.role := old.role; new.ambassador := old.ambassador; new.mentor := old.mentor; new.demo_login := old.demo_login; end if;
+    if tg_op = 'INSERT' then new.role := 'member'; new.ambassador := ''; new.mentor := false;
+    else new.role := old.role; new.ambassador := old.ambassador; new.mentor := old.mentor; end if;
   end if;
   return new;
 end $$;
@@ -127,6 +128,10 @@ begin
       split_part(t, ':', 1), split_part(t, ':', 2), split_part(t, ':', 2));
   end loop;
 end $$;
+
+-- Agenda pública: o site mostra os próximos eventos sem login.
+drop policy if exists public_events on public.events;
+create policy public_events on public.events for select to anon using (true);
 
 drop policy if exists own_profile on public.profiles;
 create policy own_profile on public.profiles for all to authenticated using (id = public.me()) with check (id = public.me());

@@ -1,11 +1,12 @@
-/* Camada de dados. Duas implementações com a mesma interface:
-   - demo: localStorage, com dados de exemplo (seed.js);
-   - supabase: banco e login reais (supabase/schema.sql).
-   Interface: list, get, insert, update, remove, auth.{current, onChange, signIn, signOut, demoUsers, demoSignIn}. */
+/* Camada de dados. Mesma interface em dois modos:
+   - supabase: banco e login reais (supabase/schema.sql). É o modo do site publicado.
+   - local: só ao rodar em localhost sem Supabase, para desenvolver. Começa vazio, sem dados de exemplo.
+   Sem Supabase configurado fora de localhost, MODE é 'setup' e o app mostra que está em configuração.
+   Interface: list, get, insert, update, remove, auth.{current, onChange, signIn, signOut}. */
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
-import { seed } from './seed.js';
 
-export const MODE = SUPABASE_URL && SUPABASE_ANON_KEY ? 'supabase' : 'demo';
+const LOCALHOST = ['localhost', '127.0.0.1', ''].includes(location.hostname);
+export const MODE = SUPABASE_URL && SUPABASE_ANON_KEY ? 'supabase' : LOCALHOST ? 'local' : 'setup';
 
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2));
 
@@ -19,14 +20,14 @@ function sortRows(rows, order) {
   return rows.slice().sort((a, b) => (a[field] > b[field] ? m : a[field] < b[field] ? -m : 0));
 }
 
-// ---------------- Demo (localStorage) ----------------
-function demoStore() {
-  const KEY = 'lme-demo-v1', SESSION = 'lme-demo-session';
+// ---------------- Local (localStorage, só para desenvolvimento) ----------------
+function localStore() {
+  const KEY = 'lme-local-v1', SESSION = 'lme-local-session';
   let mem = null;
   const load = () => {
     if (mem) return mem;
     try { mem = JSON.parse(localStorage.getItem(KEY)); } catch (e) { mem = null; }
-    if (!mem || !mem.profiles) { mem = seed(); save(); }
+    if (!mem || typeof mem !== 'object') { mem = {}; save(); }
     return mem;
   };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) { /* armazenamento indisponível: segue em memória */ } };
@@ -39,22 +40,24 @@ function demoStore() {
   return {
     async list(t, { eq, order, limit } = {}) { let r = table(t).filter(x => matches(x, eq)); r = sortRows(r, order); return structuredClone(limit ? r.slice(0, limit) : r); },
     async get(t, id) { const r = table(t).find(x => x.id === id); return r ? structuredClone(r) : null; },
-    async insert(t, row) { const r = Object.assign({ id: uid(), created_at: new Date().toISOString() }, row); table(t).push(r); save(); return structuredClone(r); },
+    async insert(t, row) {
+      const r = Object.assign({ id: uid(), created_at: new Date().toISOString() }, row);
+      // Em desenvolvimento, a primeira pessoa cadastrada vira coordenação (no Supabase isso é feito por SQL).
+      if (t === 'profiles' && !table('profiles').some(p => p.role === 'coordination')) r.role = 'coordination';
+      table(t).push(r); save(); return structuredClone(r);
+    },
     async update(t, id, patch) { const r = table(t).find(x => x.id === id); if (!r) throw new Error('Registro não encontrado.'); Object.assign(r, patch); save(); return structuredClone(r); },
     async remove(t, id) { const d = load(); d[t] = table(t).filter(x => x.id !== id); save(); },
-    reset() { mem = seed(); save(); setSession(null); },
     auth: {
       async current() { return session; },
       onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
       async signIn(email) {
-        // No modo demonstração não há e-mail: quem já tem perfil entra direto; senão vai para o cadastro.
+        // Em desenvolvimento não há e-mail: quem já tem perfil entra direto; senão vai para o cadastro.
         const p = table('profiles').find(x => (x.email || '').toLowerCase() === email.toLowerCase());
         setSession({ id: p ? p.id : uid(), email });
         return { sent: false };
       },
-      async signOut() { setSession(null); },
-      async demoUsers() { return table('profiles').filter(p => p.demo_login); },
-      async demoSignIn(id) { const p = table('profiles').find(x => x.id === id); setSession({ id: p.id, email: p.email }); }
+      async signOut() { setSession(null); }
     }
   };
 }
@@ -80,12 +83,10 @@ async function supabaseStore() {
       async current() { const { data } = await sb.auth.getSession(); const u = data.session && data.session.user; return u ? { id: u.id, email: u.email } : null; },
       onChange(fn) { const { data } = sb.auth.onAuthStateChange((_e, s) => fn(s && s.user ? { id: s.user.id, email: s.user.email } : null)); return () => data.subscription.unsubscribe(); },
       async signIn(email) { const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } }); if (error) throw new Error(error.message); return { sent: true }; },
-      async signOut() { await sb.auth.signOut(); },
-      async demoUsers() { return []; },
-      async demoSignIn() {}
+      async signOut() { await sb.auth.signOut(); }
     }
   };
 }
 
-export const db = MODE === 'supabase' ? await supabaseStore() : demoStore();
+export const db = MODE === 'supabase' ? await supabaseStore() : MODE === 'local' ? localStore() : null;
 export { uid };

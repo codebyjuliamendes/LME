@@ -33,13 +33,15 @@ DUNES = f"""<div class="dunes" aria-hidden="true">
 NAV = [("index.html", "Início"), ("a-liga.html", "A Liga"), ("programas.html", "Programas"), ("eventos.html", "Eventos"), ("parcerias.html", "Parcerias"), ("mapa.html", "Mapa do Jovem Empreendedor")]
 
 
-def page(fname, title, desc, body, forms=False):
+def page(fname, title, desc, body, forms=False, agenda=False):
     nav = "".join(
         f'<a href="{h}"{" aria-current=\"page\"" if h == fname else ""}>{t}</a>' for h, t in NAV[1:]
     )
     scripts = '<script src="assets/lme.js" defer></script>'
     if forms:
         scripts += '\n<script src="config.js" defer></script>\n<script src="assets/forms.js" defer></script>'
+    if agenda:
+        scripts += '\n<script type="module" src="assets/agenda.js"></script>'
     html = f"""<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -116,13 +118,6 @@ def cards(items, cols, render):
     return f'<div class="grid g{cols}">' + "".join(render(i) for i in items) + "</div>"
 
 
-EVENTS = [
-    ("12", "DEZ", "LME Meetup #1", "Networking, conteúdo e conexão · São Luís, 19h", "Comunidade", ""),
-    ("19", "DEZ", "Café com Founders", "Conversa informal com quem está construindo negócios · Imperatriz, 8h30", "Founders", "lagoa"),
-    ("09", "JAN", "Founder Friday", "Trocas entre founders e jovens empreendedores · Online, 18h", "Founders", "lagoa"),
-    ("23", "JAN", "Open LME", "Apresentação da comunidade para novos membros · UFMA, 17h", "Aberto ao público", "duna"),
-    ("06", "FEV", "LME Talks: inovação dentro das empresas", "Com intraempreendedores de empresas maranhenses · Online, 19h", "Intraempreendedores", ""),
-]
 
 # ---------------- Home ----------------
 home = hero(
@@ -148,15 +143,14 @@ home += f"""
 <div>{btn('Ver todos os programas', 'programas.html', 'secondary')}</div>
 </div></section>
 <section class="band"><div class="wrap stack">{head('Eventos', 'Encontros que viram relações.')}
-{cards(EVENTS[:3], 3, lambda e: f'<a class="card" href="eventos.html"><p><b style="font:800 40px/1 var(--display);color:var(--azulejo)">{e[0]}</b> <span class="eyebrow" style="color:var(--muted)">{e[1]}</span></p><h3 class="h3">{e[2]}</h3><p class="muted small">{e[3]}</p></a>')}
-<p class="muted small">Datas ilustrativas: a agenda oficial sai com a comunidade fundadora.</p>
+<div class="grid" data-agenda="3"><p class="muted">Carregando a agenda…</p></div>
 </div></section>
 <section class="band dark"><div class="wrap stack" style="gap:28px">{head('Para empresas e universidades', 'Uma troca de valor, não um pedido de apoio.', 'Acesse jovens talentos, empreendedores e intraempreendedores, lance desafios reais e fortaleça sua marca empregadora no Maranhão.')}
 <div class="row">{btn('Quero ser parceiro', 'parcerias.html#contato', 'sun')}{btn('Conhecer modalidades', 'parcerias.html', 'on-night')}</div>
 </div></section>
 <section class="band sun"><div class="wrap stack" style="gap:20px">{head('Comunidade fundadora', 'Faça parte da primeira turma.', 'Preencha o Perfil LME em cerca de 5 minutos. É com ele que a Liga faz as suas conexões.')}
 <div>{btn('Fazer meu Perfil LME', 'participar.html')}</div></div></section>"""
-page("index.html", "Liga Maranhense de Empreendedorismo", "Comunidade para a nova geração de empreendedores e intraempreendedores maranhenses.", home)
+page("index.html", "Liga Maranhense de Empreendedorismo", "Comunidade para a nova geração de empreendedores e intraempreendedores maranhenses.", home, agenda=True)
 
 # ---------------- A Liga ----------------
 liga = hero("A Liga", "Uma comunidade estadual para a nova geração.", "A LME acompanha jovens em diferentes momentos: da descoberta do interesse por negócios à criação de empresas e à liderança de projetos de transformação dentro de organizações.", [btn("Fazer meu Perfil LME", "participar.html", "sun")], inner=True)
@@ -195,13 +189,13 @@ page("programas.html", "Programas — LME", "LME Connect, Talks, Founder Session
 
 # ---------------- Eventos ----------------
 ev = hero("Eventos", "Encontros que viram relações.", "Formatos próprios da Liga, com consistência ao longo do ano.", [btn("Fazer meu Perfil LME", "participar.html", "sun")], inner=True)
-ev += f"""<section class="band"><div class="wrap stack">{head('Agenda', 'Próximos encontros', 'Datas e locais ilustrativos: a agenda oficial sai com a comunidade fundadora.')}
-<div class="grid">{''.join(f'<article class="card event"><div class="date"><b>{e[0]}</b><span>{e[1]}</span></div><div class="info"><span class="badge {e[5]}">{e[4]}</span><h3 class="h3">{e[2]}</h3><p class="muted">{e[3]}</p></div>{btn("Quero ir", "participar.html", "secondary")}</article>' for e in EVENTS)}</div>
+ev += f"""<section class="band"><div class="wrap stack">{head('Agenda', 'Próximos encontros', 'A agenda é publicada pela coordenação da Liga. Membros confirmam presença pela área do membro.')}
+<div class="grid" data-agenda="8"><p class="muted">Carregando a agenda…</p></div>
 </div></section>
 <section class="band sunk"><div class="wrap stack">{head('Formatos', 'Os encontros da Liga')}
 {cards([('LME Meetup','Encontro periódico: networking, conteúdo e conexão.'),('Café com Founders','Encontro informal com quem está construindo negócios.'),('Founder Friday','Encontro mensal de trocas entre founders.'),('LME Talks','Palestras, entrevistas e conversas.'),('Founder Match','Dinâmica para achar sócios e competências complementares.'),('Open LME','Evento aberto para conhecer a comunidade.'),('Demo Day LME','Apresentação de negócios e projetos dos membros.'),('LME Challenge','Desafios reais de empresas e instituições.'),('LME Summit','O grande encontro anual da comunidade e do ecossistema.')], 3, lambda i: f'<div class="card"><h3 class="h3">{i[0]}</h3><p class="muted">{i[1]}</p></div>')}
 </div></section>"""
-page("eventos.html", "Eventos — LME", "Meetups, Talks, Founder Friday, Demo Day e o LME Summit.", ev)
+page("eventos.html", "Eventos — LME", "Meetups, Talks, Founder Friday, Demo Day e o LME Summit.", ev, agenda=True)
 
 # ---------------- Parcerias ----------------
 par = hero("Para empresas e universidades", "Acesse a nova geração de talentos e negócios do Maranhão.", "A LME não pede apenas apoio. Ela oferece acesso qualificado a jovens talentos, empreendedores e intraempreendedores, além de projetos, desafios e presença no ecossistema.", [btn("Quero ser parceiro", "#contato", "sun")], inner=True)

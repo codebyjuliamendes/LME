@@ -21,7 +21,7 @@ export async function render({ me }) {
     const learnings = d.learnings.filter(l => l.circle_id === circle.id).sort((a, b) => b.created_at.localeCompare(a.created_at));
     const fac = people.get(circle.facilitator_id);
     mine = html`<section class="panel night" style="gap:16px"><div class="panel-head"><div><p class="eyebrow" style="color:var(--duna)">Seu Círculo</p><h2 class="h2">${circle.name}</h2></div><button class="btn on-night small" id="leave">Sair do Círculo</button></div>
-      <p class="muted">Próximo encontro: ${fmtDay(circle.next_meeting)}, ${fmtTime(circle.next_meeting)}, ${circle.place}${fac ? ` · Facilitação: ${fac.name}` : ''}</p>
+      <p class="muted">${circle.next_meeting ? `Próximo encontro: ${fmtDay(circle.next_meeting)}, ${fmtTime(circle.next_meeting)}${circle.place ? ', ' + circle.place : ''}` : 'Próximo encontro a definir'}${fac ? ` · Facilitação: ${fac.name}` : ''}</p>
       <div class="avatars">${members.map(p => avatar(p.name))}</div></section>
     <section class="panel"><div class="panel-head"><h2 class="h3">Metas do ciclo</h2><button class="btn secondary small" id="add-goal">Adicionar minha meta</button></div>
       ${goals.length ? html`<div class="list">${goals.map(g => { const p = people.get(g.user_id) || { name: 'Membro' }; return html`<div class="person">${avatar(p.name)}<div class="who"><b>${p.name.split(' ')[0]}</b><span class="small muted">${g.text}</span></div>${g.user_id === me.id ? html`<label class="sr-only" for="gs-${g.id}">Situação</label><select id="gs-${g.id}" data-goal="${g.id}" style="width:auto">${GOAL_STATUS.map(s => html`<option ${g.status === s ? raw('selected') : ''}>${s}</option>`)}</select>` : badge(g.status, TONE[g.status])}</div>`; })}</div>` : html`<p class="muted small">Nenhuma meta ainda. Comece pela sua.</p>`}
@@ -34,7 +34,7 @@ export async function render({ me }) {
 <div class="cols">
   <div class="grid" style="gap:20px">${mine || empty('Você ainda não está em um Círculo', 'Escolha um grupo ao lado. Cada pessoa participa de um Círculo por vez.')}</div>
   <aside class="grid" style="gap:12px"><h2 class="h3">${circle ? 'Outros Círculos' : 'Círculos com vagas'}</h2>
-    ${others.map(c => { const n = size(c.id), full = n >= c.capacity; return html`<article class="panel" style="gap:8px"><div class="panel-head">${badge(c.kind, 'lagoa')}<b class="small" style="color:${full ? 'var(--muted)' : 'var(--azulejo)'}">${full ? 'Lotado' : `${c.capacity - n} ${c.capacity - n === 1 ? 'vaga' : 'vagas'}`}</b></div><b>${c.name}</b><span class="small muted">${c.city} · ${c.cadence.toLowerCase()} · ${n} membros</span>${!circle && !full ? html`<button class="btn primary small" data-join="${c.id}">Entrar neste Círculo</button>` : ''}</article>`; })}
+    ${others.map(c => { const n = size(c.id), full = n >= c.capacity; return html`<article class="panel" style="gap:8px"><div class="panel-head">${badge(c.kind, 'lagoa')}<b class="small" style="color:${full ? 'var(--muted)' : 'var(--azulejo)'}">${full ? 'Lotado' : `${c.capacity - n} ${c.capacity - n === 1 ? 'vaga' : 'vagas'}`}</b></div><b>${c.name}</b><span class="small muted">${c.city || ''} · ${(c.cadence || '').toLowerCase()} · ${n} membros</span>${!circle && !full ? html`<button class="btn primary small" data-join="${c.id}">Entrar neste Círculo</button>` : ''}</article>`; })}
   </aside>
 </div>`;
 }

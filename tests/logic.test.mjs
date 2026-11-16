@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { suggestMatches, journey, indicators, toCsv, tokens } from '../app/js/logic.js';
-import { seed } from '../app/js/seed.js';
+import { seed } from './fixture.mjs';
 
 const d = seed();
 const byId = id => d.profiles.find(p => p.id === id);

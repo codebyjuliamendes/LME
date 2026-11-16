@@ -76,8 +76,9 @@ export function mount(root, ctx) {
     try {
       const exists = await db.get('profiles', draft.id);
       const row = Object.assign({}, draft, { onboarded: step >= 2 || !!(exists && exists.onboarded) });
-      if (!row.role) row.role = 'member';
-      if (exists) await db.update('profiles', draft.id, row); else await db.insert('profiles', row);
+      // O papel (membro ou coordenação) nunca é definido pelo cadastro: só na criação, e a coordenação muda depois.
+      delete row.role;
+      if (exists) await db.update('profiles', draft.id, row); else await db.insert('profiles', Object.assign(row, { role: 'member' }));
       if (step === 3) {
         if (rsvp && !(await db.get('rsvps', rsvp + ':' + draft.id))) await db.insert('rsvps', { id: rsvp + ':' + draft.id, event_id: rsvp, user_id: draft.id });
         toast('Perfil concluído. Bem-vindo à comunidade fundadora!');
