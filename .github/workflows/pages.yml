@@ -1,0 +1,58 @@
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conferir se as páginas estão em dia com o gerador
+        run: |
+          python3 scripts/build.py .
+          git diff --exit-code -- '*.html' favicon.svg assets/marca || (echo "::error::Rode python3 scripts/build.py . e faça commit das páginas geradas" && exit 1)
+      - name: Testar a lógica do app
+        run: node --test tests/logic.test.mjs
+      - name: Conferir sintaxe dos módulos do app
+        run: for f in app/js/*.js app/js/views/*.js; do cp "$f" /tmp/m.mjs && node --check /tmp/m.mjs || { echo "::error file=$f::erro de sintaxe"; exit 1; }; done
+      - name: Conferir links e arquivos locais
+        run: |
+          status=0
+          for page in *.html; do
+            for ref in $(grep -oE '(href|src)="[^"]*"' "$page" | sed -E 's/^(href|src)="//; s/"$//' | grep -v ':' | sed -E 's/[#?].*$//' | grep -v '^$'); do
+              [ -e "$ref" ] || { echo "::error file=$page::link quebrado: $ref"; status=1; }
+            done
+          done
+          exit $status
+      - name: Montar o site
+        run: |
+          mkdir _site
+          cp -r *.html config.js favicon.svg assets app .nojekyll _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
