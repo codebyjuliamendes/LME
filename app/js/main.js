@@ -1,4 +1,4 @@
-/* Roteador e moldura do app (barra lateral, barra inferior no celular, aviso de demonstração). */
+/* Roteador e moldura do app (barra lateral e barra inferior no celular). */
 import { db, MODE } from './store.js';
 import { html, raw, $, $$, avatar, toast, confirmDlg } from './ui.js';
 
@@ -9,7 +9,8 @@ const MEMBER_NAV = [
 ];
 const COORD_NAV = [
   ['coordenacao', 'Indicadores'], ['coordenacao/membros', 'Membros e curadoria'], ['coordenacao/parcerias', 'Parcerias'],
-  ['coordenacao/eventos', 'Programas e eventos'], ['coordenacao/radar', 'Radar'], ['coordenacao/beneficios', 'Benefícios'],
+  ['coordenacao/eventos', 'Programas e eventos'], ['coordenacao/circulos', 'Círculos'], ['coordenacao/challenges', 'Challenges'],
+  ['coordenacao/office-hours', 'Office Hours'], ['coordenacao/radar', 'Radar'], ['coordenacao/beneficios', 'Benefícios'],
   ['coordenacao/embaixadores', 'Embaixadores'], ['coordenacao/pesquisa', 'Pesquisa anual']
 ];
 const TABS = [['inicio', 'Início'], ['comunidade', 'Comunidade'], ['connect', 'Connect'], ['agenda', 'Agenda']];
@@ -23,7 +24,8 @@ const ROUTES = [
   [/^office-hours$/, 'office-hours'], [/^founder-school$/, 'founder-school'],
   [/^coordenacao$/, 'coord-indicadores', 'coord'], [/^coordenacao\/membros$/, 'coord-membros', 'coord'], [/^coordenacao\/parcerias$/, 'coord-parcerias', 'coord'],
   [/^coordenacao\/eventos$/, 'coord-eventos', 'coord'], [/^coordenacao\/radar$/, 'coord-radar', 'coord'], [/^coordenacao\/beneficios$/, 'coord-beneficios', 'coord'],
-  [/^coordenacao\/embaixadores$/, 'coord-embaixadores', 'coord'], [/^coordenacao\/pesquisa$/, 'coord-pesquisa', 'coord']
+  [/^coordenacao\/embaixadores$/, 'coord-embaixadores', 'coord'], [/^coordenacao\/pesquisa$/, 'coord-pesquisa', 'coord'],
+  [/^coordenacao\/circulos$/, 'coord-circulos', 'coord'], [/^coordenacao\/challenges$/, 'coord-challenges', 'coord'], [/^coordenacao\/office-hours$/, 'coord-office-hours', 'coord']
 ];
 
 const state = { session: null, me: null };
@@ -40,8 +42,8 @@ function shell(path, coord) {
   const me = state.me;
   const isCoord = me && me.role === 'coordination';
   const link = ([p, l]) => html`<a class="nav-item${path === p || (p !== 'coordenacao' && path.startsWith(p + '/')) ? ' on' : ''}" href="#/${p}"${path === p ? raw(' aria-current="page"') : ''}><i></i>${l}</a>`;
-  const demo = MODE === 'demo' ? html`<div class="demo-bar" role="note"><span><b>Modo demonstração.</b> Pessoas e dados são fictícios e ficam só neste navegador.</span><span class="demo-actions"><button type="button" class="link" data-act="switch">Trocar de pessoa</button><button type="button" class="link" data-act="reset">Restaurar exemplos</button></span></div>` : '';
-  return html`${demo}<div class="shell${coord ? ' coord' : ''}">
+  const dev = MODE === 'local' ? html`<div class="demo-bar" role="note"><span><b>Ambiente de desenvolvimento.</b> Banco local deste navegador, sem Supabase.</span></div>` : '';
+  return html`${dev}<div class="shell${coord ? ' coord' : ''}">
 <aside class="side" id="side" aria-label="Navegação">
   <a class="side-brand" href="../index.html" aria-label="Ir para o site da LME">${raw(MARK_LIGHT)}<b>LME</b></a>
   ${coord ? html`<p class="side-label">Coordenação</p><nav class="side-nav">${COORD_NAV.map(link)}</nav><a class="nav-item back" href="#/inicio"><i></i>Voltar para a área do membro</a>` : html`<nav class="side-nav">${MEMBER_NAV.map(link)}</nav>${isCoord ? html`<a class="nav-item coord-link" href="#/coordenacao"><i></i>Coordenação</a>` : ''}`}
@@ -95,13 +97,22 @@ function wireShell() {
   $$('[data-act]').forEach(b => b.addEventListener('click', async () => {
     const a = b.dataset.act;
     if (a === 'logout') { await db.auth.signOut(); go('entrar'); }
-    if (a === 'switch') { await db.auth.signOut(); go('entrar'); }
-    if (a === 'reset' && await confirmDlg('Restaurar exemplos?', 'Isso apaga o que foi feito neste navegador e volta aos dados de exemplo.', 'Restaurar', true)) { db.reset(); toast('Dados de exemplo restaurados.'); go('entrar'); }
     if (a === 'more') { const s = $('#side'); s.classList.toggle('open'); }
   }));
   $$('.side .nav-item').forEach(l => l.addEventListener('click', () => $('#side').classList.remove('open')));
 }
 
-window.addEventListener('hashchange', render);
-db.auth.onChange(() => render());
-render().catch(e => { console.error(e); $('#root').innerHTML = '<p class="boot">Não foi possível abrir a área do membro. Recarregue a página.</p>'; });
+function setup() {
+  $('#root').innerHTML = `<div class="auth"><section class="auth-form" style="grid-column:1/-1;max-width:560px;margin:auto">
+  <p class="eyebrow">Área do membro</p><h1 class="display-l">Estamos preparando a plataforma.</h1>
+  <p class="lead">A área do membro abre em breve. Enquanto isso, faça o seu Perfil LME pelo site: avisamos quando o acesso estiver liberado.</p>
+  <div class="row"><a class="btn primary" href="../participar.html">Fazer meu Perfil LME</a><a class="btn secondary" href="../index.html">Voltar para o site</a></div></section></div>`;
+  document.title = 'Área do membro — LME';
+}
+
+if (MODE === 'setup') setup();
+else {
+  window.addEventListener('hashchange', render);
+  db.auth.onChange(() => render());
+  render().catch(e => { console.error(e); $('#root').innerHTML = '<p class="boot">Não foi possível abrir a área do membro. Recarregue a página.</p>'; });
+}

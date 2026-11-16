@@ -1,4 +1,4 @@
-/* Dados de exemplo do modo demonstração. Pessoas, eventos e números são fictícios. */
+/* Fixture dos testes automáticos. Dados fictícios, usados só em tests/ e nunca publicados. */
 const day = 86400000;
 // Horários no fuso de São Luís (UTC-3), independente do fuso do navegador.
 const at = (days, h = 19, m = 0) => { const d = new Date(Date.now() + days * day); d.setUTCHours(h + 3, m, 0, 0); return d.toISOString(); };
