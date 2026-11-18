@@ -1,29 +1,13 @@
 /* LME — tokens da página "00 Fundações" do Figma "LME — Produto completo". */
 :root {
-  --base: #f4f7fb;
-  --surface: #ffffff;
-  --sunk: #e8eef6;
-  --night: #0f1d36;
-  --ink: #0f1d36;
-  --muted: #4c5b74;
-  --on-night: #f4f7fb;
-  --on-night-muted: #b9c6dc;
-  --line: #d3dcea;
-  --azulejo: #1d4ed8;
-  --azulejo-hover: #1740b5;
-  --azulejo-soft: #e4ecfd;
-  --lagoa: #0e9f93;
-  --lagoa-text: #0b7d74;
-  --lagoa-soft: #e1f5f3;
-  --duna: #e9c46a;
-  --duna-hover: #ddb255;
-  --duna-soft: #fbf1d9;
-  --error: #a12626;
+  --base: #f4f7fb; --surface: #ffffff; --sunk: #e8eef6; --night: #0f1d36; --ink: #0f1d36;
+  --muted: #4c5b74; --on-night: #f4f7fb; --on-night-muted: #b9c6dc; --line: #d3dcea;
+  --azulejo: #1d4ed8; --azulejo-hover: #1740b5; --azulejo-soft: #e4ecfd;
+  --lagoa: #0e9f93; --lagoa-text: #0b7d74; --lagoa-soft: #e1f5f3;
+  --duna: #e9c46a; --duna-hover: #ddb255; --duna-soft: #fbf1d9; --error: #a12626;
   --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --body: "Figtree", "Segoe UI", system-ui, sans-serif;
-  --gutter: max(20px, min(160px, 8vw));
-  --r: 16px;
-  color-scheme: light;
+  --gutter: max(20px, min(160px, 8vw)); --r: 16px; color-scheme: light;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -105,16 +89,12 @@ ul { margin: 0; padding: 0; list-style: none; }
 .dunes { position: absolute; inset: auto 0 0 0; height: 560px; z-index: -1; pointer-events: none; }
 .hero.inner .dunes { height: 380px; opacity: .55; }
 .dunes svg { position: absolute; bottom: 0; left: -14%; width: 139%; max-width: none; height: 100%; will-change: transform; }
-@keyframes drift-1 { to { transform: translateX(-1.4%); } }
-@keyframes drift-2 { to { transform: translateX(-2.6%); } }
-@keyframes drift-3 { to { transform: translateX(-4.2%); } }
-@keyframes drift-4 { to { transform: translateX(-6.6%); } }
+@keyframes drift-1 { to { transform: translateX(-1.4%); } } @keyframes drift-2 { to { transform: translateX(-2.6%); } }
+@keyframes drift-3 { to { transform: translateX(-4.2%); } } @keyframes drift-4 { to { transform: translateX(-6.6%); } }
 @keyframes glow { to { transform: translateY(-2.5%); opacity: 1; } }
 .dunes .l-sol { opacity: .85; animation: glow 7s ease-in-out infinite alternate; }
-.dunes .l-fundo { animation: drift-1 7s ease-in-out infinite alternate; }
-.dunes .l-lagoa { animation: drift-2 7s ease-in-out infinite alternate; }
-.dunes .l-meio { animation: drift-3 7s ease-in-out infinite alternate; }
-.dunes .l-frente { animation: drift-4 7s ease-in-out infinite alternate; }
+.dunes .l-fundo { animation: drift-1 7s ease-in-out infinite alternate; } .dunes .l-lagoa { animation: drift-2 7s ease-in-out infinite alternate; }
+.dunes .l-meio { animation: drift-3 7s ease-in-out infinite alternate; } .dunes .l-frente { animation: drift-4 7s ease-in-out infinite alternate; }
 /* Entrada: o texto do hero aparece e sobe 28 px em 0,8 s */
 @keyframes enter { from { opacity: 0; transform: translateY(28px); } }
 .hero .wrap > * { animation: enter .8s cubic-bezier(.2, .7, .2, 1) both; }
@@ -190,25 +170,17 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
   .pillars, .split { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
-  .band { padding-block: 64px; }
-  .hero { padding-top: 56px; padding-bottom: 170px; }
-  .dunes { height: 300px; }
-  .hero.inner .dunes { height: 220px; }
+  .band { padding-block: 64px; } .hero { padding-top: 56px; padding-bottom: 170px; }
+  .dunes { height: 300px; } .hero.inner .dunes { height: 220px; }
   .g2, .g3, .g4, .g5, .two, .chips { grid-template-columns: minmax(0, 1fr); }
-  .menu { display: block; }
+  .menu { display: block; } .nav.open { display: flex; }
   .nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0; padding: 8px var(--gutter) 20px; background: var(--night); }
-  .nav.open { display: flex; }
   .nav a:not(.btn) { padding: 13px 0; border-bottom: 1px solid rgba(255, 255, 255, .08); font-size: 16px; }
-  .nav .btn { margin-top: 14px; }
-  .nav a.nav-login { padding-left: 0; border-left: 0; }
+  .nav .btn { margin-top: 14px; } .nav a.nav-login { padding-left: 0; border-left: 0; }
   .top[data-open="true"] .menu span:first-child { transform: translateY(3.5px) rotate(45deg); }
   .top[data-open="true"] .menu span:last-child { transform: translateY(-3.5px) rotate(-45deg); }
-  .brand small { display: none; }
-  .row .btn, .hero .btn { flex: 1 1 100%; }
-  .event { flex-wrap: wrap; }
-  .form { padding: 22px; }
+  .brand small { display: none; } .row .btn, .hero .btn { flex: 1 1 100%; } .event { flex-wrap: wrap; } .form { padding: 22px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; }
 }
