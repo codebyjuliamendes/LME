@@ -88,7 +88,7 @@ def page(fname, title, desc, body, forms=False, agenda=False):
 </body>
 </html>
 """
-    with open(os.path.join(OUT, fname), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUT, fname), "w", encoding="utf-8", newline="\n") as f:
         f.write(html)
 
 
@@ -289,10 +289,10 @@ nf = hero("Página não encontrada", "Esse caminho não leva a lugar nenhum.", "
 page("404.html", "Página não encontrada — LME", "Página não encontrada.", nf)
 
 # ---------------- Logo files ----------------
-with open(os.path.join(OUT, "favicon.svg"), "w") as f:
+with open(os.path.join(OUT, "favicon.svg"), "w", encoding="utf-8", newline="\n") as f:
     f.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">' + mark("#1D4ED8", "#E9B949").split(">", 1)[1].replace(' class="mark"', ""))
 os.makedirs(os.path.join(OUT, "assets", "marca"), exist_ok=True)
 for name, b, g in [("simbolo-azul.svg", "#1D4ED8", "#E9B949"), ("simbolo-branco.svg", "#FFFFFF", "#E9C46A")]:
-    with open(os.path.join(OUT, "assets", "marca", name), "w") as f:
+    with open(os.path.join(OUT, "assets", "marca", name), "w", encoding="utf-8", newline="\n") as f:
         f.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">' + mark(b, g).split(">", 1)[1])
 print("ok")

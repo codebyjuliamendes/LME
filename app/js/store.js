@@ -6,7 +6,11 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 const LOCALHOST = ['localhost', '127.0.0.1', ''].includes(location.hostname);
-export const MODE = SUPABASE_URL && SUPABASE_ANON_KEY ? 'supabase' : LOCALHOST ? 'local' : 'setup';
+const FORCE_LOCAL = LOCALHOST && (
+  new URLSearchParams(location.search).get('mode') === 'local' ||
+  localStorage.getItem('lme-force-local') === '1'
+);
+export const MODE = FORCE_LOCAL ? 'local' : (SUPABASE_URL && SUPABASE_ANON_KEY ? 'supabase' : LOCALHOST ? 'local' : 'setup');
 
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2));
 
@@ -67,6 +71,16 @@ async function supabaseStore() {
   const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm');
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const run = async q => { const { data, error } = await q; if (error) throw new Error(error.message); return data; };
+  const deriveKey = email => {
+    const b = btoa(unescape(encodeURIComponent(email.trim().toLowerCase()))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 24);
+    return `LmeAuth#${b}!9`;
+  };
+  let claimedUid = null;
+  const ensureClaimed = async u => {
+    if (!u || claimedUid === u.id) return;
+    claimedUid = u.id;
+    try { await sb.rpc('claim_profile_by_email'); } catch (e) { /* sem perfil prévio para vincular */ }
+  };
   return {
     async list(t, { eq, order, limit } = {}) {
       let q = sb.from(t).select('*');
@@ -80,10 +94,42 @@ async function supabaseStore() {
     async update(t, id, patch) { const d = await run(sb.from(t).update(patch).eq('id', id).select()); return d[0]; },
     async remove(t, id) { await run(sb.from(t).delete().eq('id', id)); },
     auth: {
-      async current() { const { data } = await sb.auth.getSession(); const u = data.session && data.session.user; return u ? { id: u.id, email: u.email } : null; },
-      onChange(fn) { const { data } = sb.auth.onAuthStateChange((_e, s) => fn(s && s.user ? { id: s.user.id, email: s.user.email } : null)); return () => data.subscription.unsubscribe(); },
-      async signIn(email) { const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } }); if (error) throw new Error(error.message); return { sent: true }; },
-      async signOut() { await sb.auth.signOut(); }
+      async current() {
+        const { data } = await sb.auth.getSession();
+        const u = data.session && data.session.user;
+        if (!u) { claimedUid = null; return null; }
+        await ensureClaimed(u);
+        return { id: u.id, email: u.email };
+      },
+      onChange(fn) {
+        const { data } = sb.auth.onAuthStateChange((_e, s) => {
+          if (!s || !s.user) claimedUid = null;
+          fn(s && s.user ? { id: s.user.id, email: s.user.email } : null);
+        });
+        return () => data.subscription.unsubscribe();
+      },
+      async signIn(rawEmail) {
+        const email = rawEmail.trim().toLowerCase();
+        const password = deriveKey(email);
+        let res = await sb.auth.signInWithPassword({ email, password });
+        if (res.error) {
+          const up = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } });
+          if (!up.error && up.data && up.data.session) {
+            res = up;
+          } else if (up.error && /already registered/i.test(up.error.message)) {
+            const otp = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+            if (otp.error) throw new Error(otp.error.message);
+            return { sent: true };
+          } else if (up.error) {
+            throw new Error(up.error.message);
+          } else {
+            return { sent: true };
+          }
+        }
+        if (res.data && res.data.user) await ensureClaimed(res.data.user);
+        return { sent: false };
+      },
+      async signOut() { claimedUid = null; await sb.auth.signOut(); }
     }
   };
 }

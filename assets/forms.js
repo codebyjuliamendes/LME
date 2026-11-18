@@ -1,11 +1,14 @@
 /* Envio do Perfil LME (participar.html) e do interesse de parceiros (parcerias.html)
-   para o Google Forms. Endereços e códigos "entry.NNN" ficam em config.js. */
+   para o Supabase (ou Google Forms caso configurado em config.js). */
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var CFG = window.LME_FORMS || {};
-  function ready(c) { return !!(c && c.action && c.fields && Object.keys(c.fields).every(function (k) { return c.fields[k]; })); }
+  var SB = window.LME_SUPABASE || {};
+  function sbReady() { return !!(SB && SB.url && SB.anonKey); }
+  function formsReady(c) { return !!(c && c.action && c.fields && Object.keys(c.fields).every(function (k) { return c.fields[k]; })); }
+  function ready(c) { return formsReady(c) || sbReady(); }
   function show(el, cls, text) { el.className = 'status ' + cls; el.textContent = text; el.hidden = false; }
-  function post(c, values) {
+  function postGoogleForms(c, values) {
     var body = new URLSearchParams();
     Object.keys(values).forEach(function (k) {
       var entry = c.fields[k], v = values[k];
@@ -14,6 +17,52 @@
     });
     // O Google Forms não responde com CORS: a resposta é opaca, mas o envio é registrado.
     return fetch(c.action, { method: 'POST', mode: 'no-cors', body: body });
+  }
+  async function postSupabaseRpc(fn, payload) {
+    var r = await fetch(SB.url.replace(/\/$/, '') + '/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: {
+        apikey: SB.anonKey,
+        Authorization: 'Bearer ' + SB.anonKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) {
+      var txt = await r.text();
+      throw new Error('RPC ' + fn + ' ' + r.status + ': ' + txt);
+    }
+    return r.json();
+  }
+  function postPerfil(values) {
+    if (formsReady(CFG.perfil)) return postGoogleForms(CFG.perfil, values);
+    var skills = String(values.competencias || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    return postSupabaseRpc('submit_public_profile', {
+      p_name: values.nome,
+      p_age: values.idade ? +values.idade : null,
+      p_city: values.cidade,
+      p_email: values.email,
+      p_whatsapp: values.whatsapp || '',
+      p_org: values.organizacao || '',
+      p_area: values.area || '',
+      p_perfis: values.perfis || [],
+      p_interest: values.interesse || '',
+      p_business: values.negocio || '',
+      p_innovation: values.inovacao || '',
+      p_skills: skills,
+      p_seeking: values.procurando || '',
+      p_offering: values.ajudar || ''
+    });
+  }
+  function postParceria(values) {
+    if (formsReady(CFG.parceria)) return postGoogleForms(CFG.parceria, values);
+    return postSupabaseRpc('submit_partner_interest', {
+      p_name: values.nome,
+      p_org: values.organizacao,
+      p_kind: values.tipo,
+      p_contact: values.contato,
+      p_notes: values.mensagem || ''
+    });
   }
   function fieldError(el, text) {
     var id = el.id + '-err', e = $(id);
@@ -62,7 +111,7 @@
       var values = {}; KEYS.forEach(function (k) { values[k] = $(k).value.trim(); });
       values.perfis = Array.prototype.map.call(form.querySelectorAll('input[name=perfis]:checked'), function (i) { return i.value; });
       var btn = $('perfil-submit'); btn.disabled = true;
-      try { await post(CFG.perfil, values); form.reset(); show(st, 'ok', 'Perfil enviado. Bem-vindo à comunidade fundadora! A coordenação vai falar com você pelo e-mail informado.'); }
+      try { await postPerfil(values); form.reset(); show(st, 'ok', 'Perfil enviado. Bem-vindo à comunidade fundadora! A coordenação vai falar com você pelo e-mail informado.'); }
       catch (err) { show(st, 'bad', 'Não foi possível enviar agora. A conexão falhou. Confira sua internet e tente de novo.'); }
       finally { btn.disabled = false; }
     });
@@ -84,7 +133,7 @@
       if (first) { first.focus(); show(st, 'bad', 'Preencha os campos marcados para enviar.'); return; }
       var btn = $('parceria-submit'); btn.disabled = true;
       try {
-        await post(CFG.parceria, { nome: $('p-nome').value.trim(), organizacao: $('p-org').value.trim(), tipo: $('p-tipo').value, contato: $('p-contato').value.trim(), mensagem: $('p-msg').value.trim() });
+        await postParceria({ nome: $('p-nome').value.trim(), organizacao: $('p-org').value.trim(), tipo: $('p-tipo').value, contato: $('p-contato').value.trim(), mensagem: $('p-msg').value.trim() });
         pform.reset(); show(st, 'ok', 'Interesse enviado. A equipe de Parcerias vai responder pelo contato informado.');
       } catch (err) { show(st, 'bad', 'Não foi possível enviar agora. A conexão falhou. Tente de novo.'); }
       finally { btn.disabled = false; }

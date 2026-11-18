@@ -55,7 +55,7 @@ function collect(form) {
   const fd = new FormData(form), o = {};
   for (const [k, v] of fd.entries()) { if (k === 'perfis') (o.perfis = o.perfis || []).push(v); else o[k] = typeof v === 'string' ? v.trim() : v; }
   if (step === 1) { o.perfis = o.perfis || []; o.skills = (o.skills || '').split(',').map(s => s.trim()).filter(Boolean); }
-  if (step === 0) o.age = +o.age || '';
+  if (step === 0) o.age = +o.age || null;
   if (step === 2) o.consent = !!o.consent;
   return o;
 }

@@ -11,10 +11,10 @@ export async function render() {
   <div class="head" style="max-width:30ch"><p class="eyebrow" style="color:var(--duna)">Área do membro</p><h1 class="display-l">Ninguém precisa empreender sozinho.</h1><p class="lead">Conexões, encontros, oportunidades e o seu Círculo, num lugar só.</p></div>
 </section>
 <section class="auth-form">
-  <div class="head"><h2 class="h2">Entrar</h2><p class="muted">${MODE === 'supabase' ? 'Digite seu e-mail. Mandamos um link para você entrar sem senha.' : 'Ambiente de desenvolvimento: digite um e-mail para entrar ou criar um perfil.'}</p></div>
+  <div class="head"><h2 class="h2">Entrar</h2><p class="muted">${MODE === 'supabase' ? 'Digite seu e-mail para entrar na sua conta ou concluir seu Perfil LME.' : 'Ambiente de desenvolvimento: digite um e-mail para entrar ou criar um perfil.'}</p></div>
   <form id="login" class="form-grid" novalidate>
     <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" placeholder="nome@exemplo.com" required></div>
-    <button class="btn primary" type="submit">${MODE === 'supabase' ? 'Receber link de acesso' : 'Continuar com este e-mail'}</button>
+    <button class="btn primary" type="submit">${MODE === 'supabase' ? 'Entrar com e-mail' : 'Continuar com este e-mail'}</button>
     <p class="status" id="login-status" role="status" aria-live="polite" hidden></p>
   </form>
   <p class="small muted">Ainda não conhece a Liga? <a href="../index.html">Veja o site</a>.</p>
@@ -24,12 +24,14 @@ export async function render() {
 export function mount(root, ctx) {
   $('#login', root).addEventListener('submit', async e => {
     e.preventDefault();
-    const email = $('#email', root).value.trim(), st = $('#login-status', root);
+    const email = $('#email', root).value.trim(), st = $('#login-status', root), btn = $('button[type=submit]', root);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { st.className = 'status bad'; st.textContent = 'O e-mail precisa ter @ e domínio, como nome@exemplo.com.'; st.hidden = false; $('#email', root).focus(); return; }
+    btn.disabled = true;
     try {
       const r = await db.auth.signIn(email);
       if (r.sent) { st.className = 'status ok'; st.textContent = `Link enviado para ${email}. Abra o e-mail neste aparelho para entrar.`; st.hidden = false; }
       else ctx.go('inicio');
-    } catch (err) { st.className = 'status bad'; st.textContent = 'Não foi possível enviar o link agora. Confira o e-mail e tente de novo.'; st.hidden = false; }
+    } catch (err) { st.className = 'status bad'; st.textContent = 'Não foi possível entrar agora. Confira o e-mail e tente de novo.'; st.hidden = false; }
+    finally { btn.disabled = false; }
   });
 }
